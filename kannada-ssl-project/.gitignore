@@ -1,0 +1,32 @@
+# Python virtual environments
+wavenv/
+venv/
+env/
+.venv/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment/secrets
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Large ML model files
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.ckpt
+
+# Archives
+*.zip
+*.tar
+*.gz
+*.rar
+
+# Logs
+*.log
