@@ -181,6 +181,14 @@ class SpeechToSpeechPipeline:
             )
             return result
 
+        if not translation.get("success"):
+            result["error"] = (
+                "Translation failed: "
+                + str(translation.get("error", "unknown error"))
+                + " (check internet access / Google Translate rate limit)"
+            )
+            return result
+
         translated_text = translation.get(
             "translated_text",
             ""
