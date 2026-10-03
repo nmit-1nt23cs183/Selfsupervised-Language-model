@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="translator-page chatbot-page">
+
+  <div class="translator-header">
+    <h1>Say it. Type it. Hear it back.</h1>
+    <p>Speak or type in any language. The assistant recognises it, translates it into the language you choose, and reads the answer aloud.</p>
+  </div>
+
+  <div class="chat-card">
+
+    <div class="chat-top-row">
+      <div class="s2s-lang-field">
+        <label>I'm speaking / typing in</label>
+        <select id="chatSourceLang">
+          <option value="auto" selected>Auto-detect</option>
+          {% for code, name in languages.items() %}
+          <option value="{{ code }}">{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="s2s-lang-field">
+        <label>Reply in</label>
+        <select id="chatTargetLang">
+          {% for code, name in languages.items() %}
+          <option value="{{ code }}" {% if code == 'kn' %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <button class="action-btn" onclick="resetChat()" title="Start a new conversation">New conversation</button>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-msg bot">
+        <div class="chat-bubble">
+           Hello. Tap the microphone and speak, or type a sentence. I will translate it into the language you chose and read it aloud.
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-typing" id="chatTyping" style="display:none;">
+      <span></span><span></span><span></span>
+    </div>
+
+    <div class="chat-input-row">
+      <button class="mic-btn chat-mic-btn" id="chatMicBtn" onclick="toggleChatMic()" title="Speak your message">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
+      </button>
+      <input type="text" id="chatInput" placeholder="Type or tap the mic and speak…" onkeydown="if(event.key==='Enter') sendChatMessage()" />
+       <button class="translate-btn chat-send-btn" onclick="sendChatMessage()">Send</button>
+    </div>
+
+  </div>
+
+</div>
+
+{% endblock %}
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/chatbot.js') }}?v=3{{ '' }}"></script>
+{% endblock %}

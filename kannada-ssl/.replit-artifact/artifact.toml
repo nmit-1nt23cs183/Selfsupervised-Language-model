@@ -1,0 +1,30 @@
+kind = "web"
+previewPath = "/"
+title = "KannadaSSL"
+description = "A multilingual Kannada-first language platform with translation, speech-to-speech tools, conversational AI, and an interactive keyboard."
+version = "1.0.0"
+id = "artifacts/kannada-ssl"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20511
+
+[services.development]
+run = "python3 flask_app/app.py"
+
+[services.production]
+
+[services.production.build]
+args = ["bash", "-lc", "true"]
+
+[services.production.run]
+args = ["python3", "flask_app/app.py"]
+
+[services.production.run.env]
+PORT = "20511"
+
+[services.env]
+PORT = "20511"
+BASE_PATH = "/"
