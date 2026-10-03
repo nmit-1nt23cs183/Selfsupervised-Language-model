@@ -251,21 +251,6 @@ async function runTranslation() {
         names[data.detected_language] || data.detected_language.toUpperCase();
     }
 
-    // Pipeline steps
-    if (data.steps?.length) {
-      const det  = document.getElementById('pipelineDetails');
-      const list = document.getElementById('pipelineStepsList');
-      det.style.display = 'block';
-      list.innerHTML = data.steps.map(s => `
-        <div class="ps-item">
-          <div class="ps-num">${s.step}</div>
-          <div>
-            <div class="ps-name">${s.name}</div>
-            <div class="ps-out">${s.output}</div>
-          </div>
-        </div>`).join('');
-    }
-
     // Auto-speak if coming from microphone
     if (document.getElementById('micStatus').style.display === 'none' &&
         document.getElementById('micLabel').textContent.includes('Speak')) {
@@ -306,7 +291,6 @@ function resetOutput() {
          <p style="font-size:0.78rem;margin-top:0.25rem">Press Ctrl+Enter or choose Translate</p>
     </div>`;
   document.getElementById('outputActions').style.display = 'none';
-  document.getElementById('pipelineDetails').style.display = 'none';
   stopSpeaking();
 }
 
