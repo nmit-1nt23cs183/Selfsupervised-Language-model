@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="about-page">
+  <div class="about-hero">
+    <div class="about-kannada-char">ಕ</div>
+    <h1>Kannada SSL</h1>
+    <p>Self-Supervised Learning for Low-Resource Kannada Language Processing</p>
+  </div>
+
+  <div class="about-cards">
+    <div class="about-card">
+      <div class="about-icon">🌐</div>
+      <h3>What it does</h3>
+      <p>Translates text or speech from <strong>any language</strong> into Kannada internally using a self-supervised ML model, then delivers the result in <strong>your desired language</strong>.</p>
+    </div>
+    <div class="about-card">
+      <div class="about-icon">🎙️</div>
+      <h3>Speech Recognition</h3>
+      <p>Speak into your microphone in any language. The system auto-detects your language, processes it through the Kannada SSL model, and outputs in your chosen language.</p>
+    </div>
+    <div class="about-card">
+      <div class="about-icon">⌨️</div>
+      <h3>Virtual Keyboard</h3>
+      <p>Type directly in Kannada script using the on-screen keyboard — no special input method needed. Supports Kannada vowels, consonants, and conjuncts.</p>
+    </div>
+    <div class="about-card">
+      <div class="about-icon">🧠</div>
+      <h3>Self-Supervised Learning</h3>
+      <p>The core model is trained on Kannada audio and text using SSL (wav2vec2 + mBERT) — no large labeled datasets required, making it ideal for low-resource languages.</p>
+    </div>
+  </div>
+
+  <div class="about-pipeline">
+    <h2>How It Works</h2>
+    <div class="pipeline-flow">
+      <div class="pf-step">
+        <div class="pf-num">1</div>
+        <div class="pf-text">You type or speak in <strong>any language</strong></div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-step">
+        <div class="pf-num">2</div>
+        <div class="pf-text">Translated to <strong>Kannada</strong> internally</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-step">
+        <div class="pf-num">3</div>
+        <div class="pf-text"><strong>Kannada SSL model</strong> processes it</div>
+      </div>
+      <div class="pf-arrow">→</div>
+      <div class="pf-step">
+        <div class="pf-num">4</div>
+        <div class="pf-text">Output in your <strong>desired language</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="about-stack">
+    <h2>Technology</h2>
+    <div class="stack-chips">
+      <span class="chip">Python 3.11</span>
+      <span class="chip">Flask</span>
+      <span class="chip">PyTorch</span>
+      <span class="chip">wav2vec2</span>
+      <span class="chip">mBERT</span>
+      <span class="chip">HuggingFace</span>
+      <span class="chip">Web Speech API</span>
+      <span class="chip">deep-translator</span>
+      <span class="chip">Kannada Padakosha</span>
+      <span class="chip">Self-Supervised Learning</span>
+    </div>
+  </div>
+</div>
+{% endblock %}
