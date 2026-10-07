@@ -5,7 +5,51 @@
 
   <div class="translator-header">
     <h1>Speak naturally. Hear it back.</h1>
-    <p>Choose two languages, record your voice or add an audio file, and listen to the translation.</p>
+    <p>Choose two languages, say what you mean, and listen to the translation. You can also record or add an audio file when that suits you better.</p>
+  </div>
+
+  <!-- Quick mode: live mic → auto-translate → auto-speak -->
+  <div class="s2s-card">
+    <div class="s2s-card-header">
+      <h3>Quick conversation</h3>
+      <span class="s2s-tag">Speak and listen</span>
+    </div>
+    <p class="s2s-desc">Use your microphone for a short sentence. KannadaSSL translates it and reads the result aloud for an easy back-and-forth.</p>
+
+    <div class="s2s-lang-row">
+      <div class="s2s-lang-field">
+        <label>I'm speaking in</label>
+        <select id="quickSourceLang">
+          {% for code, name in languages.items() %}
+          <option value="{{ code }}" {% if code == 'en' %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <span class="s2s-arrow">→</span>
+      <div class="s2s-lang-field">
+        <label>Speak back in</label>
+        <select id="quickTargetLang">
+          {% for code, name in languages.items() %}
+          <option value="{{ code }}" {% if code == 'kn' %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <button class="mic-btn s2s-quick-mic" id="quickMicBtn" onclick="toggleQuickMic()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+      <span id="quickMicLabel">Speak once</span>
+    </button>
+
+    <div class="s2s-quick-result" id="quickResult" style="display:none;">
+      <div class="s2s-quick-line"><span class="s2s-quick-label">You said:</span> <span id="quickHeard"></span></div>
+      <div class="s2s-quick-line"><span class="s2s-quick-label">Translated:</span> <span id="quickTranslated"></span></div>
+    </div>
   </div>
 
   <!-- File-based mode: upload/record audio → translated audio -->

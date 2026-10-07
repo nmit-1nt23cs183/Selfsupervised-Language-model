@@ -26,46 +26,9 @@ import logging
 import os
 from typing import Optional
 
-import re
-
 logger = logging.getLogger(__name__)
 
-_LANG_NAMES = {
-    "english": "en", "kannada": "kn", "hindi": "hi", "telugu": "te", "tamil": "ta",
-    "malayalam": "ml", "marathi": "mr", "gujarati": "gu", "bengali": "bn", "urdu": "ur",
-    "french": "fr", "german": "de", "spanish": "es", "chinese": "zh-CN", "arabic": "ar",
-    "japanese": "ja", "korean": "ko", "russian": "ru", "portuguese": "pt", "italian": "it",
-}
-_LANG_RE = "(?P<lang>" + "|".join(_LANG_NAMES) + ")"
-_Q = "[\"'“‘]?"
-_QE = "[\"'”’]?"
-
-# "what does hi mean in kannada", "what is the meaning of hi in hindi", "hi meaning in tamil",
-# "how to say thank you in telugu", "translate good morning to french", "water in kannada",
-# "kannada word for book"
-_WORD_PATTERNS = [
-    rf"(?:what\s+(?:does|is|do)|meaning\s+of|how\s+(?:do\s+(?:you|i)|to)\s+say|translate)\s+(?:the\s+)?(?:(?:meaning|translation)\s+of\s+)?{_Q}(?P<w>.+?){_QE}\s+(?:(?:mean|means|meaning|meanin)\s+)?(?:in|to|into)\s+{_LANG_RE}\??$",
-    rf"{_Q}(?P<w>.+?){_QE}\s+(?:meaning|means?|translation)\s+in\s+{_LANG_RE}\??$",
-    rf"{_LANG_RE}\s+(?:word|translation|meaning)\s+(?:for|of)\s+{_Q}(?P<w>.+?){_QE}\??$",
-    rf"{_Q}(?P<w>.+?){_QE}\s+(?:in|to|into)\s+{_LANG_RE}\??$",
-]
-
-
-def _extract_word_request(message: str):
-    """Return (word, language_code) if the user asks to translate a word/phrase, else None."""
-    m = (message or "").strip().rstrip(".!? ")
-    for pat in _WORD_PATTERNS:
-        hit = re.search(pat, m, flags=re.IGNORECASE)
-        if hit:
-            w = hit.group("w").strip(" \"'“”‘’")
-            # drop leftover filler like "the meaning of" captured at the front
-            w = re.sub(r"^(?:the\s+)?\w*(?:aning|translation)\s+of\s+", "", w, flags=re.IGNORECASE)
-            if w:
-                return w, _LANG_NAMES[hit.group("lang").lower()]
-    return None
-
-
-SIMILARITY_THRESHOLD = 0.12  # (legacy dataset search, currently unused)
+SIMILARITY_THRESHOLD = 0.12  # below this, treat as "no good match in the dataset"
 MAX_HISTORY_TURNS = 20
 
 
@@ -275,62 +238,73 @@ class KannadaChatbot:
 
     # ── Public API ───────────────────────────────────────────────────────────
 
-    def respond(self, message: str, target_language: str = "kn", session_id: str = "default",
-                source_language: str = "auto") -> dict:
-        """
-        Speech/text recognition + translation assistant (not a Q&A bot).
+    def respond(self, message: str, target_language: str = "en", session_id: str = "default") -> dict:
+        """Answer a chatbot message, grounded in the trained dataset."""
+        if not self.is_loaded:
+            load_result = self.load()
+            if not load_result.get("success"):
+                return {"success": False, "error": load_result.get("error")}
 
-        The user types or speaks in any language; the bot recognises the language and
-        replies with the translation in the chosen "Reply in" language. The frontend
-        reads the reply aloud, the same way the Speech-to-Speech page does.
-        """
         message = (message or "").strip()
         if not message:
             return {"success": False, "error": "Empty message"}
 
         from models.translator import detect_language, translate_text
 
-        detected_lang = source_language if source_language and source_language != "auto" \
-            else detect_language(message)
+        detected_lang = detect_language(message)
 
-        # "what does hi mean in <language>" -> translate just the word into that language
-        req = _extract_word_request(message)
-        text_to_translate = req[0] if req else message
-        if req:
-            target_language = req[1]
-            if source_language == "auto":
-                detected_lang = "auto"  # the extracted word is short; let Google detect it
+        to_kn = translate_text(message, source_lang=detected_lang, target_lang="kn")
+        query_kn = to_kn.get("translated_text", message)
 
-        if detected_lang == target_language:
-            result = {
-                "translated_text": text_to_translate, "success": True, "was_translated": False,
-            }
-            note = "Already in the chosen language — pick a different Reply-in language to translate."
+        matches = self._retrieve(query_kn, top_k=3)
+        best = matches[0] if matches else None
+
+        # Optional topic classification for extra grounding
+        predicted_topic = None
+        classifier = self._get_classifier()
+        if classifier is not None:
+            clf_result = classifier.classify(query_kn)
+            if clf_result.get("success"):
+                predicted_topic = clf_result.get("predicted_label")
+
+        # Compose a Kannada answer grounded in the retrieved dataset content
+        threshold = getattr(self.config, "CHATBOT_SIMILARITY_THRESHOLD", SIMILARITY_THRESHOLD)
+        if best and best["score"] >= threshold:
+            source = best["source"]
+            if source.get("dataset") == "padakosha":
+                answer_kn = f"ನಿಘಂಟಿನ ಪ್ರಕಾರ: {best['text']}"
+            else:
+                label_note = f" (ವಿಷಯ: {source.get('label')})" if source.get("label") else ""
+                answer_kn = f"ತರಬೇತಿ ದತ್ತಾಂಶದಲ್ಲಿ ಸಂಬಂಧಿತ ಮಾಹಿತಿ ಸಿಕ್ಕಿದೆ{label_note}: {best['text']}"
+            grounded = True
         else:
-            result = translate_text(text_to_translate, source_lang=detected_lang,
-                                    target_lang=target_language)
-            note = None
+            answer_kn = (
+                "ಈ ಪ್ರಶ್ನೆಗೆ ತರಬೇತಿ ದತ್ತಾಂಶದಲ್ಲಿ ನಿಖರವಾದ ಹೊಂದಾಣಿಕೆ ಸಿಗಲಿಲ್ಲ. "
+                "ದಯವಿಟ್ಟು ಬೇರೆ ರೀತಿಯಲ್ಲಿ ಕೇಳಿ ಅಥವಾ ಕನ್ನಡ ಭಾಷೆ/ಡೇಟಾಸೆಟ್ ಬಗ್ಗೆ ಪ್ರಶ್ನಿಸಿ."
+            )
+            grounded = False
 
-        if not result.get("success"):
-            return {"success": False,
-                    "error": "Translation failed: " + str(result.get("error", "unknown error")),
-                    "hint": "Check your internet connection (Google Translate must be reachable)."}
+        from_kn = translate_text(answer_kn, source_lang="kn", target_lang=target_language)
+        answer = from_kn.get("translated_text", answer_kn)
 
-        reply = result["translated_text"]
-
+        # Update session history
         history = self._sessions.setdefault(session_id, [])
         history.append({"role": "user", "text": message})
-        history.append({"role": "bot", "text": reply})
+        history.append({"role": "bot", "text": answer})
         max_turns = getattr(self.config, "CHATBOT_MAX_HISTORY_TURNS", MAX_HISTORY_TURNS)
         del history[: max(0, len(history) - max_turns * 2)]
 
         return {
             "success": True,
-            "reply": reply,
-            "heard": text_to_translate,
-            "note": note,
+            "reply": answer,
+            "reply_kannada": answer_kn,
+            "grounded_in_dataset": grounded,
+            "matched_confidence": round(best["score"], 3) if best else 0.0,
+            "predicted_topic": predicted_topic,
             "detected_language": detected_lang,
             "target_language": target_language,
+            "sources": [m["source"] for m in matches] if matches else [],
+            "using_sample_data": self.using_sample_data,
         }
 
     def reset(self, session_id: str = "default") -> None:

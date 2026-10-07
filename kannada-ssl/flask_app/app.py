@@ -311,8 +311,7 @@ def api_chatbot():
     """Chat with the dataset-grounded Kannada AI chatbot."""
     data = request.get_json(silent=True) or {}
     message = data.get("message", "").strip()
-    target_language = data.get("target_language", "kn")
-    source_language = data.get("source_language", "auto")
+    target_language = data.get("target_language", "en")
 
     if not message:
         return jsonify({"success": False, "error": "No message provided"}), 400
@@ -325,8 +324,7 @@ def api_chatbot():
 
     try:
         chatbot = _get_chatbot()
-        result = chatbot.respond(message, target_language=target_language,
-                                 session_id=session_id, source_language=source_language)
+        result = chatbot.respond(message, target_language=target_language, session_id=session_id)
         if not result.get("success"):
             return jsonify(result), 503
         return jsonify(result)

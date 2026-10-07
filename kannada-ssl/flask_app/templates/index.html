@@ -165,7 +165,38 @@
         </div>
       </div>
 
+      <details class="pipeline-details" id="pipelineDetails" style="display:none;">
+        <summary>See translation details</summary>
+        <div class="pipeline-steps-list" id="pipelineStepsList"></div>
+      </details>
+
     </div>
+  </div>
+
+  <!-- Quick output language buttons -->
+  <div class="quick-langs">
+    <span class="ql-label">Quick output</span>
+    <button class="ql-btn" onclick="setOutputLang('en')">English</button>
+    <button class="ql-btn" onclick="setOutputLang('kn')">ಕನ್ನಡ</button>
+    <button class="ql-btn" onclick="setOutputLang('hi')">हिंदी</button>
+    <button class="ql-btn" onclick="setOutputLang('te')">తెలుగు</button>
+    <button class="ql-btn" onclick="setOutputLang('ta')">தமிழ்</button>
+    <button class="ql-btn" onclick="setOutputLang('ml')">മലയാളം</button>
+    <button class="ql-btn" onclick="setOutputLang('fr')">Français</button>
+    <button class="ql-btn" onclick="setOutputLang('ar')">العربية</button>
+    <button class="ql-btn" onclick="setOutputLang('zh-CN')">中文</button>
+    <button class="ql-btn" onclick="setOutputLang('ja')">日本語</button>
+  </div>
+
+  <!-- Example texts -->
+  <div class="examples-row">
+    <span class="ql-label">Try a phrase</span>
+    <button class="example-chip" onclick="setExample('ನಮಸ್ಕಾರ, ನೀವು ಹೇಗಿದ್ದೀರಿ?')">ಕನ್ನಡ</button>
+    <button class="example-chip" onclick="setExample('The weather is beautiful today')">English</button>
+    <button class="example-chip" onclick="setExample('नमस्ते, कैसे हैं आप?')">Hindi</button>
+    <button class="example-chip" onclick="setExample('Bonjour, comment ça va?')">French</button>
+    <button class="example-chip" onclick="setExample('مرحبا، كيف حالك؟')">Arabic</button>
+    <button class="example-chip" onclick="setExample('こんにちは、お元気ですか？')">Japanese</button>
   </div>
 
 </div>

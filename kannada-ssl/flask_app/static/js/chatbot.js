@@ -8,30 +8,12 @@ const CHAT_SPEECH_REC_LANG = {
   'ml': 'ml-IN', 'mr': 'mr-IN', 'fr': 'fr-FR', 'de': 'de-DE', 'es': 'es-ES',
 };
 
-const CHAT_SYNTH_LANG = {
-  'en': 'en-US', 'kn': 'kn-IN', 'hi': 'hi-IN', 'te': 'te-IN', 'ta': 'ta-IN',
-  'ml': 'ml-IN', 'mr': 'mr-IN', 'fr': 'fr-FR', 'de': 'de-DE', 'es': 'es-ES',
-  'it': 'it-IT', 'pt': 'pt-BR', 'ru': 'ru-RU', 'ar': 'ar-SA', 'zh-CN': 'zh-CN',
-  'ja': 'ja-JP', 'ko': 'ko-KR', 'bn': 'bn-IN', 'gu': 'gu-IN', 'ur': 'ur-IN',
-};
-Object.assign(CHAT_SPEECH_REC_LANG, {
-  'it': 'it-IT', 'pt': 'pt-PT', 'ru': 'ru-RU', 'ar': 'ar-SA', 'zh-CN': 'zh-CN',
-  'ja': 'ja-JP', 'ko': 'ko-KR', 'bn': 'bn-IN', 'gu': 'gu-IN', 'ur': 'ur-IN',
-});
-
-function chatSpeak(text, langCode) {
-  if (!window.speechSynthesis || !text) return;
-  window.speechSynthesis.cancel();
-  const utter = new SpeechSynthesisUtterance(text);
-  utter.lang = CHAT_SYNTH_LANG[langCode] || 'en-US';
-  window.speechSynthesis.speak(utter);
-}
-
 let chatSending = false;
 let chatRecognition = null;
 let chatListening = false;
+let sampleDataNoticeShown = false;
 
-function appendMessage(role, text, meta, speakLang) {
+function appendMessage(role, text, meta) {
   const container = document.getElementById('chatMessages');
   const msg = document.createElement('div');
   msg.className = `chat-msg ${role}`;
@@ -39,15 +21,6 @@ function appendMessage(role, text, meta, speakLang) {
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble';
   bubble.textContent = text;
-  if (speakLang) {
-    const btn = document.createElement('button');
-    btn.className = 'action-btn';
-    btn.textContent = '🔊 Listen';
-    btn.style.marginTop = '0.4rem';
-    btn.onclick = () => chatSpeak(text, speakLang);
-    bubble.appendChild(document.createElement('br'));
-    bubble.appendChild(btn);
-  }
   msg.appendChild(bubble);
 
   if (meta) {
@@ -69,10 +42,6 @@ function setTyping(visible) {
   }
 }
 
-window.addEventListener('error', (e) => {
-  try { appendMessage('bot', 'Page error: ' + e.message); } catch (_) {}
-});
-
 async function sendChatMessage() {
   if (chatSending) return;
 
@@ -80,8 +49,7 @@ async function sendChatMessage() {
   const message = input.value.trim();
   if (!message) return;
 
-  const targetLang = ((document.getElementById('chatTargetLang') || {}).value || 'kn');
-  const sourceLang = ((document.getElementById('chatSourceLang') || {}).value || 'auto');
+  const targetLang = document.getElementById('chatTargetLang').value;
 
   appendMessage('user', message);
   input.value = '';
@@ -92,25 +60,31 @@ async function sendChatMessage() {
     const resp = await fetch('/api/chatbot', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message, target_language: targetLang, source_language: sourceLang }),
+      body: JSON.stringify({ message, target_language: targetLang }),
     });
     const data = await resp.json();
     setTyping(false);
 
     if (!data.success) {
-      appendMessage('bot', (data.error || 'Something went wrong. Please try again.') +
-        (data.hint ? ' ' + data.hint : ''));
+      appendMessage('bot', data.error || 'Something went wrong. Please try again.');
       return;
     }
 
-    const names = { en:'English', kn:'Kannada', hi:'Hindi', te:'Telugu', ta:'Tamil', ml:'Malayalam',
-      mr:'Marathi', gu:'Gujarati', bn:'Bengali', ur:'Urdu', fr:'French', de:'German', es:'Spanish',
-      'zh-CN':'Chinese', ar:'Arabic', ja:'Japanese', ko:'Korean', ru:'Russian', pt:'Portuguese', it:'Italian' };
-    const meta = data.note ||
-      `${names[data.detected_language] || data.detected_language} → ${names[data.target_language] || data.target_language}`;
+    let meta = data.grounded_in_dataset
+      ? 'A close match to your question'
+      : 'I’m still learning this question';
+    if (data.predicted_topic) meta += ` · ${data.predicted_topic}`;
 
-    appendMessage('bot', data.reply, meta, data.target_language);
-    if (!data.note) chatSpeak(data.reply, data.target_language);
+    if (data.using_sample_data && !sampleDataNoticeShown) {
+      sampleDataNoticeShown = true;
+      appendMessage(
+        'bot',
+         'I have a smaller set of examples available right now, so my answer may be brief. ' +
+         'You can still ask me about Kannada words and everyday topics.'
+      );
+    }
+
+    appendMessage('bot', data.reply, meta);
   } catch (e) {
     setTyping(false);
     appendMessage('bot', 'I could not reach the conversation service. Please try again.');
@@ -125,7 +99,7 @@ async function resetChat() {
   } catch {}
   const container = document.getElementById('chatMessages');
   container.innerHTML = '';
-  appendMessage('bot', 'A fresh conversation is ready. Speak or type to translate.');
+  appendMessage('bot', 'A fresh conversation is ready. What would you like to know?');
 }
 
 function toggleChatMic() {
@@ -136,11 +110,11 @@ function toggleChatMic() {
     return;
   }
 
-  const sourceLang = ((document.getElementById('chatSourceLang') || {}).value || 'auto');
+  const targetLang = document.getElementById('chatTargetLang').value;
   const micBtn = document.getElementById('chatMicBtn');
 
   chatRecognition = new SpeechRec();
-  chatRecognition.lang = CHAT_SPEECH_REC_LANG[sourceLang] || 'en-IN';  // 'auto' -> English default
+  chatRecognition.lang = CHAT_SPEECH_REC_LANG[targetLang] || 'en-IN';
   chatRecognition.interimResults = false;
   chatRecognition.maxAlternatives = 1;
 
